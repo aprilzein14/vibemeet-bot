@@ -1,5 +1,5 @@
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 import logging
 import os
 from flask import Flask, request
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 TOKEN = '8061966528:AAGeOKTUi49qA3x98blJQKE53bqdq-xZbU8'
 
 # Ganti dengan username channelmu
-CHANNEL_USERNAME = '@YourChannelUsername'
+CHANNEL_USERNAME = '@vibemeetch'
 # Ganti dengan link Traktir atau instruksi pembayaran lainnya
 PAYMENT_INSTRUCTION = 'Silakan bayar melalui link berikut: https://trakteer.id/yourprofile'
 
@@ -45,6 +45,7 @@ def check_channel_membership(update: Update, context: CallbackContext):
         logger.error(f"Error: {e}")
         update.message.reply_text("Terjadi kesalahan dalam memverifikasi status channel. Coba lagi nanti.")
 
+# Flask route untuk menerima webhook
 @app.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
     json_str = request.get_data().decode("UTF-8")
@@ -52,6 +53,7 @@ def webhook():
     updater.dispatcher.process_update(update)
     return 'OK'
 
+# Fungsi untuk mengatur webhook dan menjalankan bot
 def main():
     global updater
     updater = Updater(TOKEN, use_context=True)
@@ -61,8 +63,12 @@ def main():
     dp.add_handler(MessageHandler(Filters.text & ~Filters.command, check_channel_membership))
 
     # Set webhook untuk bot
-    webhook_url = os.environ.get("WEBHOOK_URL")  # URL Railway (Railway akan menambahkannya secara otomatis)
-    updater.bot.set_webhook(url=webhook_url + '/' + TOKEN)
+    webhook_url = os.environ.get("WEBHOOK_URL")  # Railway akan menambahkannya secara otomatis
+    if webhook_url:
+        updater.bot.set_webhook(url=f"{webhook_url}/{TOKEN}")
+        logger.info(f"Webhook successfully set to {webhook_url}/{TOKEN}")
+    else:
+        logger.error("Webhook URL not found!")
 
 if __name__ == '__main__':
     main()
